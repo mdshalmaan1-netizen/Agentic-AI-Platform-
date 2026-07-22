@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Agentic AI Platform (Google Gemini + Node.js + Express.js)
 
 A multi-agent AI backend that uses the **Google Gemini API** to power five
@@ -420,3 +421,6 @@ To add a new agent:
 
 ## 9. License
 MIT — use freely in your own projects.
+=======
+# Agentic-AI-Platform-
+>>>>>>> 3036ce90f31ed499326070b2cf137cb33a6777be
