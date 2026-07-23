@@ -1,0 +1,294 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ApplicationStatus {
+  APPLIED
+  INTERVIEWING
+  ASSESSMENT
+  OFFERED
+  ACCEPTED
+  REJECTED
+}
+
+enum WorkType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  REMOTE
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String?
+  googleId      String?        @unique
+  role          Role           @default(USER)
+  isActive      Boolean        @default(true)
+  emailVerified Boolean        @default(false)
+  refreshToken  String?
+  lastLoginAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  profile       Profile?
+  resumes       Resume[]
+  savedJobs     SavedJob[]
+  savedInternships SavedInternship[]
+  savedHackathons  SavedHackathon[]
+  chatHistory   ChatHistory[]
+  aiHistory     AIHistory[]
+  notifications Notification[]
+  applications  Application[]
+  roadmaps      Roadmap[]
+
+  @@index([email])
+}
+
+model Profile {
+  id                   String     @id @default(uuid())
+  userId               String     @unique
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                 String
+  email                String
+  phone                String?
+  photoUrl             String?
+  headline             String?
+  summary              String?    @db.Text
+  preferredLocation    String?
+  preferredRole        String?
+  preferredWorkType    WorkType?  @default(FULL_TIME)
+  expectedSalary       String?
+  experienceLevel      String?
+  linkedinUrl          String?
+  githubUrl            String?
+  portfolioUrl         String?
+  skills               String[]
+  programmingLanguages String[]
+  frameworks           String[]
+  domains              String[]
+  interests            String[]
+  isOnboarded          Boolean    @default(false)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  @@map("profiles")
+}
+
+model Resume {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileUrl     String
+  rawText     String          @db.Text
+  version     Int             @default(1)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  analysis    ResumeAnalysis?
+
+  @@index([userId])
+}
+
+model ResumeAnalysis {
+  id               String   @id @default(uuid())
+  resumeId         String   @unique
+  resume           Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  skills           String[]
+  languages        String[]
+  frameworks       String[]
+  projects         Json
+  experience       Json
+  education        Json
+  certifications   String[]
+  softSkills       String[]
+  resumeScore      Int
+  atsScore         Int
+  scoreBreakdown   Json
+  missingSkills    String[]
+  suggestions      String[]
+  summary          String   @db.Text
+  createdAt        DateTime @default(now())
+}
+
+model Job {
+  id            String      @id @default(uuid())
+  externalId    String?
+  provider      String
+  title         String
+  company       String
+  companyLogo   String?
+  salaryMin     Float?
+  salaryMax     Float?
+  currency      String?     @default("USD")
+  experience    String?
+  location      String
+  skills        String[]
+  description   String      @db.Text
+  applyLink     String
+  type          WorkType    @default(FULL_TIME)
+  remote        Boolean     @default(false)
+  postedDate    DateTime    @default(now())
+  normalizedAt  DateTime    @default(now())
+
+  savedJobs     SavedJob[]
+  applications  Application[]
+
+  @@unique([provider, externalId])
+  @@index([title, company, location])
+}
+
+model Internship {
+  id            String            @id @default(uuid())
+  externalId    String?
+  provider      String
+  title         String
+  company       String
+  companyLogo   String?
+  stipend       String?
+  duration      String?
+  location      String
+  skills        String[]
+  description   String            @db.Text
+  applyLink     String
+  remote        Boolean           @default(false)
+  postedDate    DateTime          @default(now())
+  
+  savedInternships SavedInternship[]
+
+  @@unique([provider, externalId])
+}
+
+model Hackathon {
+  id            String           @id @default(uuid())
+  title         String
+  organizer     String
+  bannerUrl     String?
+  prizePool     String?
+  difficulty    String?
+  tags          String[]
+  description   String           @db.Text
+  link          String
+  startDate     DateTime
+  endDate       DateTime
+  
+  savedHackathons SavedHackathon[]
+}
+
+model SavedJob {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  savedAt   DateTime @default(now())
+
+  @@unique([userId, jobId])
+}
+
+model SavedInternship {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  internshipId String
+  internship   Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  savedAt      DateTime   @default(now())
+
+  @@unique([userId, internshipId])
+}
+
+model SavedHackathon {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hackathonId String
+  hackathon   Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+  savedAt     DateTime  @default(now())
+
+  @@unique([userId, hackathonId])
+}
+
+model Application {
+  id          String            @id @default(uuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId       String
+  job         Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status      ApplicationStatus @default(APPLIED)
+  appliedAt   DateTime          @default(now())
+  deadline    DateTime?
+  notes       String?           @db.Text
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([userId, jobId])
+}
+
+model ChatHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String
+  role      String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId, sessionId])
+}
+
+model AIHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agentType String
+  input     Json
+  output    Json
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   String
+  type      String
+  title     String
+  body      String   @db.Text
+  metadata  Json?
+  isRead    Boolean  @default(false)
+  sentAt    DateTime @default(now())
+}
+
+model Roadmap {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  timeline  Json
+  skills    String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Certification {
+  id                String   @id @default(uuid())
+  name              String
+  provider          String
+  url               String
+  skills            String[]
+  level             String
+  estimatedDuration String?
+  createdAt         DateTime @default(now())
+}

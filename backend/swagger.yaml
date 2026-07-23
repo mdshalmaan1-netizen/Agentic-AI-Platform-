@@ -1,0 +1,64 @@
+openapi: 3.0.0
+info:
+  title: Agentic AI Career Platform API
+  version: 1.0.0
+  description: Enterprise API documentation for Multi-Agent Career Platform
+servers:
+  - url: http://localhost:8000/api
+    description: Local Development Server
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name]
+              properties:
+                email: { type: string, example: user@example.com }
+                password: { type: string, example: Secret123! }
+                name: { type: string, example: Jane Doe }
+      responses:
+        201: { description: User registered successfully }
+  /auth/login:
+    post:
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        200: { description: JWT tokens issued }
+  /resume/upload:
+    post:
+      summary: Upload resume PDF and run AI analysis pipeline
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                resume: { type: string, format: binary }
+      responses:
+        201: { description: Resume analyzed with ATS score }
+  /jobs/search:
+    get:
+      summary: Aggregated job search across multiple providers
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: location
+          in: query
+          schema: { type: string }
+      responses:
+        200: { description: List of normalized jobs with AI Opportunity Scores }
